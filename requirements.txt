@@ -1,0 +1,6 @@
+pypdf
+typer
+rich
+pydantic
+pandas
+crawl4ai

@@ -1,0 +1,6 @@
+{
+  "cities": ["London", "Dublin", "Amsterdam", "Singapore", "Toronto", "Vancouver"],
+  "countries": ["UK", "Ireland", "Netherlands", "Singapore", "Canada"],
+  "remote": true,
+  "preferred_timezone": "Any"
+}
