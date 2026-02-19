@@ -1,0 +1,6 @@
+{
+  "enabled_providers": ["linkedin"],
+  "min_match_score": 60,
+  "search_freshness_hours": 48,
+  "retention_days": 30
+}

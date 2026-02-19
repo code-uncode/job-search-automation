@@ -37,3 +37,4 @@ data/resume/
 .env
 report_*.csv
 report_*.md
+dev-test/*

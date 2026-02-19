@@ -39,10 +39,13 @@ A Python-based CLI tool to automate the job hunt process, leveraging AI for cand
 - [ ] **Advanced Scheduling**: Built-in cron-like functionality for periodic runs.
 
 ## TODO
-- [ ] Implement PDF resume parsing (`src/pdf_parser.py`).
-- [ ] Build Candidate Persona extractor (`src/ai_module.py`).
-- [ ] Integrate Crawl4AI for discovery (`src/providers/`).
-- [ ] Create hashing/deduplication engine (`src/ledger_ops.py`).
+- [x] Implement PDF resume parsing (`src/pdf_parser.py`).
+- [x] Build Candidate Persona extractor (`src/ai_module.py`).
+- [x] For the first run, ensure the persona is checked by the user. (Implemented in `main.py init`)
+- [x] For subsequent runs, check with the user if the persona needs updating. (Implemented in `main.py search`)
+- [ ] Add confidence score on skills for better job matching.
+- [ ] Integrate Crawl4AI for discovery (`src/providers/`). (LinkedIn structure started)
+- [x] Create hashing/deduplication engine (`src/ledger_ops.py`).
 - [ ] Implement 48-hour freshness & 60% match score filters.
 - [ ] Add CSV/Markdown report generation.
-- [ ] Implement "Archive" logic for ledger maintenance.
+- [x] Implement "Archive" logic for ledger maintenance.

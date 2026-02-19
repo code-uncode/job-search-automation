@@ -10,8 +10,23 @@ class LLMInterface:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
 
-    def _call_gemini_cli(self, prompt: str) -> str:
+    def _log_debug(self, filename: str, content: str):
+        return
+        
+        """Helper to save debug data to the dev-test folder."""
+        debug_path = os.path.join("dev-test", filename)
+        try:
+            with open(debug_path, "w") as f:
+                f.write(content)
+        except Exception as e:
+            # We don't want debug logging to crash the app
+            pass
+
+    def _call_gemini_cli(self, prompt: str, debug_id: Optional[str] = None) -> str:
         """Calls the 'gemini' CLI command and returns the output string."""
+        if debug_id:
+            self._log_debug(f"{debug_id}_prompt.txt", prompt)
+            
         try:
             # Use -p flag for non-interactive mode
             result = subprocess.run(
@@ -20,24 +35,52 @@ class LLMInterface:
                 text=True,
                 check=True
             )
-            return result.stdout
+            output = result.stdout
+            
+            if debug_id:
+                self._log_debug(f"{debug_id}_output.txt", output)
+                
+            return output
         except subprocess.CalledProcessError as e:
             raise Exception(f"Gemini CLI call failed: {e.stderr}")
 
-    def _extract_json(self, text: str) -> Dict[str, Any]:
-        """Extracts the first JSON object found in a string."""
+    def _extract_json(self, text: str) -> Any:
+        """Extracts the first JSON object or list found in a string, attempting to fix truncation."""
         # Find JSON block using regex, handling potential markdown markers
-        match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+        match = re.search(r"```json\s*([\[\{].*?[\]\}])\s*```", text, re.DOTALL)
         if not match:
-            match = re.search(r"(\{.*?\})", text, re.DOTALL)
+            # Try to find anything that looks like JSON start
+            match = re.search(r"([\[\{].*)", text, re.DOTALL)
             
         if match:
-            json_str = match.group(1)
+            json_str = match.group(1).strip()
+            
+            # If it's a markdown block that was truncated, remove the trailing markers
+            if json_str.endswith("```"):
+                json_str = json_str[:-3].strip()
+
+            # Attempt to fix truncated JSON by closing brackets/braces
+            stack = []
+            for char in json_str:
+                if char in "[{":
+                    stack.append(char)
+                elif char in "]}":
+                    if stack:
+                        stack.pop()
+            
+            # Close remaining brackets/braces in reverse order
+            while stack:
+                opening = stack.pop()
+                if opening == "[":
+                    json_str += "]"
+                elif opening == "{":
+                    json_str += "}"
+
             try:
                 return json.loads(json_str)
             except json.JSONDecodeError:
                 raise Exception(f"Failed to parse extracted JSON: {json_str}")
-        raise Exception(f"No JSON object found in Gemini output: {text}")
+        raise Exception(f"No JSON found in Gemini output: {text}")
 
     def generate_persona(self, resume_text: str) -> Dict[str, Any]:
         """
@@ -57,7 +100,7 @@ class LLMInterface:
         Resume Text:
         {resume_text}
         """
-        output = self._call_gemini_cli(prompt)
+        output = self._call_gemini_cli(prompt, debug_id="persona_extraction")
         return self._extract_json(output)
 
     def score_job(self, persona: Dict[str, Any], job_description: str) -> Dict[str, Any]:
@@ -79,5 +122,19 @@ class LLMInterface:
         Job Description:
         {job_description}
         """
-        output = self._call_gemini_cli(prompt)
+        output = self._call_gemini_cli(prompt, debug_id="job_scoring")
+        return self._extract_json(output)
+
+    def extract_structured_data(self, text: str, schema_description: str, debug_id: Optional[str] = None) -> Any:
+        """Uses LLM to extract structured data from raw text based on a schema description."""
+        prompt = f"""
+        Analyze the following text and extract structured data based on this description:
+        {schema_description}
+
+        Return ONLY a JSON object or list of objects.
+
+        Text:
+        {text}
+        """
+        output = self._call_gemini_cli(prompt, debug_id=debug_id)
         return self._extract_json(output)
